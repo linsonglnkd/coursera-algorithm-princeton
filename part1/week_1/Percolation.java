@@ -4,10 +4,10 @@ import edu.princeton.cs.algs4.WeightedQuickUnionUF;
 public class Percolation {
     private int N;
     private boolean [] siteMatrix;
-    // when initialize, set the size of uf to be N*N+1; the last element is used as "root" to determine
-    // whether a site is full.  this is to save the number of calls to WeightedQuickUnionUF so the program
-    // runs faster
-    private WeightedQuickUnionUF uf;
+    // use two UnionFind, each has an additional virtual site
+    // the first has the virtual site (the last element) for the top
+    // the second has the virtual site for the bottom
+    private WeightedQuickUnionUF ufTop;
     private WeightedQuickUnionUF ufBottom;
     private boolean isPercolcated;
     // create N-by-N grid, with all sites blocked
@@ -15,7 +15,7 @@ public class Percolation {
         if (N <= 0) throw new java.lang.IllegalArgumentException("size too small");
         this.N = N;
         siteMatrix = new boolean[N*N];
-        uf = new WeightedQuickUnionUF(N*N+1);
+        ufTop = new WeightedQuickUnionUF(N*N+1);
         ufBottom = new WeightedQuickUnionUF(N*N+1);
         isPercolcated = false;
     }
@@ -27,23 +27,23 @@ public class Percolation {
         // open the site
         siteMatrix[(i-1)*N+(j-1)] = true;
         // if this site is in the first row, then of course it is connected to the virtual "top" site
-        if (i == 1) uf.union((i-1)*N+(j-1), N*N);
+        if (i == 1) ufTop.union((i-1)*N+(j-1), N*N);
 
         if (i == N) ufBottom.union((i-1)*N+(j-1), N*N);
         // if left is open
-        if (j > 1 && isOpen(i, j-1)) uf.union((i-1)*N+(j-1), (i-1)*N+(j-2));
+        if (j > 1 && isOpen(i, j-1)) ufTop.union((i-1)*N+(j-1), (i-1)*N+(j-2));
         if (j > 1 && isOpen(i, j-1)) ufBottom.union((i-1)*N+(j-1), (i-1)*N+(j-2));
         // if right is open
-        if (j < N && isOpen(i, j+1)) uf.union((i-1)*N+(j-1), (i-1)*N+j);
+        if (j < N && isOpen(i, j+1)) ufTop.union((i-1)*N+(j-1), (i-1)*N+j);
         if (j < N && isOpen(i, j+1)) ufBottom.union((i-1)*N+(j-1), (i-1)*N+j);
         // if up is open
-        if (i > 1 && isOpen(i-1, j)) uf.union((i-1)*N+(j-1), (i-2)*N+(j-1));
+        if (i > 1 && isOpen(i-1, j)) ufTop.union((i-1)*N+(j-1), (i-2)*N+(j-1));
         if (i > 1 && isOpen(i-1, j)) ufBottom.union((i-1)*N+(j-1), (i-2)*N+(j-1));
         // if down is open
-        if (i < N && isOpen(i+1, j)) uf.union((i-1)*N+(j-1), i*N+(j-1));
+        if (i < N && isOpen(i+1, j)) ufTop.union((i-1)*N+(j-1), i*N+(j-1));
         if (i < N && isOpen(i+1, j)) ufBottom.union((i-1)*N+(j-1), i*N+(j-1));
 
-        if (!isPercolcated && uf.connected((i-1)*N+(j-1), N*N) && ufBottom.connected((i-1)*N+(j-1), N*N))
+        if (!isPercolcated && ufTop.connected((i-1)*N+(j-1), N*N) && ufBottom.connected((i-1)*N+(j-1), N*N))
             isPercolcated = true;
 
     }
@@ -56,12 +56,7 @@ public class Percolation {
     // is site (row i, column j) full?
     public boolean isFull(int i, int j) {
         if (!isOpen(i, j)) return false;
-        /* 
-        old implementation, slow
-        for (int k = 0; k < N; k++) 
-            if (uf.connected((i-1)*N+(j-1), k)) return true;
-        */
-        return uf.connected((i-1)*N+(j-1), N*N);
+        return ufTop.connected((i-1)*N+(j-1), N*N);
     }
     // does the system percolate?    
     public boolean percolates() {
